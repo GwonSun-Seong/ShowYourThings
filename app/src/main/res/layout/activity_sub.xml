@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".MainActivity"
+    android:background="@color/white">
+
+    <ImageButton
+        android:layout_width="200dp"
+        android:layout_height="100dp"
+        android:background="@color/white"
+        android:layout_gravity="center_horizontal"
+        android:contentDescription="바코드 인식 화면으로 이동"
+        android:src="@drawable/baicon"
+        android:layout_marginTop="50dp"
+        android:id="@+id/goback"/>
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+
+        <ImageButton
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="100dp"
+            android:id="@+id/server1"
+            android:layout_margin="5dp"
+            android:src="@drawable/koreannet"
+            android:contentDescription="코리안넷으로 변경(기본값)"/>
+
+
+        <ImageButton
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="100dp"
+            android:id="@+id/server2"
+            android:layout_margin="5dp"
+            android:contentDescription="소비자 24로 변경"/>
+
+    </LinearLayout>
+
+    <ImageButton
+        android:layout_gravity="center"
+        android:background="@color/white"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:id="@+id/help"
+        android:src="@drawable/help"
+        android:layout_margin="5dp"
+        android:contentDescription="도움말"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="50dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_gravity="center"
+            android:layout_height="30dp"
+            android:text="하단 바를 통해 TTS 속도 조절"
+            android:textSize="20dp"/>
+
+        <SeekBar
+            android:id="@+id/seekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max = "10"/>
+
+    </LinearLayout>
+
+
+    <TextView
+        android:id="@+id/txtid"
+        android:layout_width="wrap_content"
+        android:layout_gravity="center"
+        android:layout_height="50dp"
+        android:text="Show Your Things"
+        android:textStyle="bold"
+        android:layout_marginTop="100dp"
+        android:textSize="20dp"/>
+
+
+</LinearLayout>
