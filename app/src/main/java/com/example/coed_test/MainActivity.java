@@ -234,7 +234,9 @@ public class MainActivity extends AppCompatActivity {
                                     closeCamera();
                                     parsing = "";
                                     JsoupAsyncTask jsoupAsyncTask = new JsoupAsyncTask();
-                                    linkurl = "http://sundaelove.iptime.org:8080/ShowYourThings/" + server + "/" + barcode.getRawValue();
+                                    linkurl = "http://sundaelove.iptime.org:8080/ShowYourThings/barcode/8801073212756";
+                                    // linkurl = "http://sundaelove.iptime.org:8080/ShowYourThings/" + server + "/" + barcode.getRawValue();
+                                    Toast.makeText(MainActivity.this, barcode.getRawValue().toString(), Toast.LENGTH_SHORT).show();
                                     jsoupAsyncTask.execute();
 
                                     list.clear();
@@ -301,11 +303,14 @@ public class MainActivity extends AppCompatActivity {
                     //init();
 
                 }
-                else{
+                else if(parsing != null & !(parsing.equals("not found"))){
                     tts.speak(parsing, TextToSpeech.QUEUE_FLUSH, null);
                     alertdg();
-                    long A = System.currentTimeMillis() - tempTimeB;
-
+                }
+                else {
+                    tts.speak("에러 발생", TextToSpeech.QUEUE_FLUSH, null);
+                    parsing = null;
+                    alertdg();
                 }
             }
         }
@@ -382,6 +387,7 @@ public class MainActivity extends AppCompatActivity {
             builder.setMessage(parsing);
         }
         else{builder.setMessage("데이터베이스에 없는 제품입니다.");}
+
         builder.setPositiveButton("확인", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
