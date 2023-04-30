@@ -230,12 +230,10 @@ public class MainActivity extends AppCompatActivity {
                             }
                             if(list.size() >= 3){
                                 if(list.get(0).equals(list.get(1)) && list.get(1).equals(list.get(2))){
-                                    Toast.makeText(MainActivity.this, "모두 일치합니다", Toast.LENGTH_SHORT).show();
                                     closeCamera();
                                     parsing = "";
                                     JsoupAsyncTask jsoupAsyncTask = new JsoupAsyncTask();
-                                    linkurl = "http://sundaelove.iptime.org:8080/ShowYourThings/barcode/8801073212756";
-                                    // linkurl = "http://sundaelove.iptime.org:8080/ShowYourThings/" + server + "/" + barcode.getRawValue();
+                                    linkurl = "http://sundaelove.iptime.org:8080/ShowYourThings/" + server + "/" + barcode.getRawValue();
                                     Toast.makeText(MainActivity.this, barcode.getRawValue().toString(), Toast.LENGTH_SHORT).show();
                                     jsoupAsyncTask.execute();
 
