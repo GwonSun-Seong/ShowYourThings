@@ -268,10 +268,14 @@ public class MainActivity extends AppCompatActivity {
                                     price = "";
                                     JsoupAsyncTask jsoupAsyncTask = new JsoupAsyncTask();
                                     linkurl = "http://sundaelove.iptime.org:8080/ShowYourThings/" + server + "/" + barcode.getRawValue();
-                                    Toast.makeText(MainActivity.this, barcode.getRawValue().toString() + server, Toast.LENGTH_SHORT).show();
                                     jsoupAsyncTask.execute();
 
                                     list.clear();
+                                    if(mUserDao.getServer().equals("barcode")){
+                                        Toast.makeText(MainActivity.this, "코리안넷에 바코드번호" + barcode.getRawValue().toString() + "를 검색합니다.", Toast.LENGTH_SHORT).show();
+                                    }
+                                    else if(mUserDao.getServer().equals("barcode2")){ Toast.makeText(MainActivity.this, "소비자24에 바코드번호" + barcode.getRawValue().toString() + "를 검색합니다.", Toast.LENGTH_SHORT).show(); }
+
                                 }
                                 else{
                                     tts.speak("초점이 맞지 않습니다.", TextToSpeech.QUEUE_FLUSH, null);
@@ -345,8 +349,13 @@ public class MainActivity extends AppCompatActivity {
                     //init();
 
                 }
-                else if(parsing != null & !(parsing.equals("not found"))){
-                    tts.speak(parsing + "네이버 가격" + price, TextToSpeech.QUEUE_FLUSH, null);
+                else if(!(parsing.equals("not found"))){
+                    if (price != null & price != ""){
+                        tts.speak(parsing + "네이버 쇼핑 가격" + price, TextToSpeech.QUEUE_FLUSH, null);
+                    }
+                    else {
+                        tts.speak(parsing + "가격 조회 불가" + price, TextToSpeech.QUEUE_FLUSH, null);
+                    }
                     alertdg();
                 }
                 else {
@@ -427,7 +436,10 @@ public class MainActivity extends AppCompatActivity {
         builder.setCancelable(false);
         builder.setTitle("바코드 인식 결과");
         if(parsing != null){
-            builder.setMessage(parsing + "\n네이버쇼핑 가격" + price);
+            if(price != null & price != ""){
+                builder.setMessage(parsing + "\n네이버쇼핑 가격" + price);
+            }
+            else{builder.setMessage(parsing + "\n가격 조회 불가" + price);}
         }
         else{builder.setMessage("데이터베이스에 없는 제품입니다.");}
 
