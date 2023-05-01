@@ -17,17 +17,20 @@ import android.widget.Switch;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.room.Room;
 
 import java.util.Locale;
 
 public class SubActivity extends AppCompatActivity {
 
+    private UserDao mUserDao;
     //Button speedup, speeddown, goback; server1, server2;
     ImageButton server1, server2, goback, help;
     Switch serverselect;
     SeekBar ttsbar;
     TextToSpeech tts;
     float Subttsspeed;
+    String server;
     //private RadioGroup rg;
     //private RadioButton rb1, rb2;
 
@@ -37,6 +40,17 @@ public class SubActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sub);
+
+        UserDatabase database = Room.databaseBuilder(getApplicationContext(), UserDatabase.class, "db")
+                .fallbackToDestructiveMigration()
+                .allowMainThreadQueries()
+                .build();
+
+        mUserDao = database.userDao();
+
+        // 서버 설정 값 가져오기
+        server = mUserDao.getServer();
+        Subttsspeed = mUserDao.getTtsSpeed();
 
 
         //speedup = findViewById(R.id.tts_speed_up);
@@ -56,9 +70,9 @@ public class SubActivity extends AppCompatActivity {
             public void onInit(int status) {
                 if (status != ERROR) {
 
-                    Intent intent = getIntent();
-                    Subttsspeed = intent.getFloatExtra("mainSpeed", 5.0f);
-                    ttsbar.setProgress((int)Subttsspeed);
+                    Subttsspeed = mUserDao.getTtsSpeed();
+                    // ttsbar 프로그레스 값 설정
+                    ttsbar.setProgress((int) Subttsspeed);
 
                     tts.setLanguage(Locale.KOREAN);
                     tts.setSpeechRate(Subttsspeed);
@@ -76,7 +90,13 @@ public class SubActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(SubActivity.this, MainActivity.class);
-                intent.putExtra("Server", "barcode");
+                User user2 = new User();
+                user2.setId(1);
+                user2.setServer("barcode");
+                user2.setTtsspeed(Subttsspeed);
+
+                mUserDao.setUpdateUser(user2);
+
                 tts.speak("바코드 정보가 적지만 속도가 빠릅니다.", TextToSpeech.QUEUE_FLUSH, null);
                 finish();
                 startActivity(intent);
@@ -86,7 +106,13 @@ public class SubActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(SubActivity.this, MainActivity.class);
-                intent.putExtra("Server", "barcode2");
+                User user3 = new User();
+                user3.setId(1);
+                user3.setServer("barcode2");
+                user3.setTtsspeed(Subttsspeed);
+
+                mUserDao.setUpdateUser(user3);
+
                 tts.speak("바코드 정보가 많지만 속도가 느립니다.", TextToSpeech.QUEUE_FLUSH, null);
                 finish();
                 startActivity(intent);
@@ -132,7 +158,14 @@ public class SubActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(SubActivity.this, MainActivity.class);
-                intent.putExtra("Speed", Subttsspeed);
+
+                User user4 = new User();
+                user4.setId(1);
+                user4.setServer(mUserDao.getServer());
+                user4.setTtsspeed(mUserDao.getTtsSpeed());
+
+                mUserDao.setUpdateUser(user4);
+
                 finish();
                 startActivity(intent);
             }
@@ -172,13 +205,28 @@ public class SubActivity extends AppCompatActivity {
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
                 if(Subttsspeed < 2.0f){
+
+                    User user5 = new User();
+                    user5.setId(1);
+                    user5.setServer(mUserDao.getServer());
+                    user5.setTtsspeed(1.0f);
+
+                    mUserDao.setUpdateUser(user5);
+
+                    tts.setSpeechRate(Subttsspeed);
                     tts.speak("가장 느린 속도입니다.", TextToSpeech.QUEUE_FLUSH, null);
-                    ttsbar.setProgress(2);
-                    Subttsspeed = 2.0f;
+                    ttsbar.setProgress(1);
                 }
                 else{
-                    tts.speak("tts 속도가" + Subttsspeed + "으로 변경되었습니다.", TextToSpeech.QUEUE_FLUSH, null);
                     tts.setSpeechRate(Subttsspeed);
+                    tts.speak("tts 속도가" + Subttsspeed + "으로 변경되었습니다.", TextToSpeech.QUEUE_FLUSH, null);
+
+                    User user6 = new User();
+                    user6.setId(1);
+                    user6.setServer(mUserDao.getServer());
+                    user6.setTtsspeed(Subttsspeed);
+
+                    mUserDao.setUpdateUser(user6);
                 }
 
 
@@ -194,7 +242,14 @@ public class SubActivity extends AppCompatActivity {
 
         tts.speak("바코드 인식 화면으로 이동합니다.", TextToSpeech.QUEUE_FLUSH, null);
         Intent intent = new Intent(SubActivity.this, MainActivity.class);
-        intent.putExtra("Speed", Subttsspeed);
+
+        User user7 = new User();
+        user7.setId(1);
+        user7.setServer(mUserDao.getServer());
+        user7.setTtsspeed(mUserDao.getTtsSpeed());
+
+        mUserDao.setUpdateUser(user7);
+
         finish();
         startActivity(intent);
 

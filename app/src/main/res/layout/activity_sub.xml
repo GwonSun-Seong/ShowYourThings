@@ -41,6 +41,7 @@
             android:layout_height="100dp"
             android:id="@+id/server2"
             android:layout_margin="5dp"
+            android:src="@drawable/sobija24"
             android:contentDescription="소비자 24로 변경"/>
 
     </LinearLayout>

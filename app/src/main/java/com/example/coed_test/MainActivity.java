@@ -14,6 +14,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
+import android.util.Log;
 import android.util.Size;
 import android.view.KeyEvent;
 import android.widget.Toast;
@@ -32,6 +33,7 @@ import androidx.camera.view.PreviewView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentManager;
+import androidx.room.Room;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -62,6 +64,7 @@ import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
 
+    private UserDao mUserDao;
     private ListenableFuture cameraProviderFuture;
     private ExecutorService cameraExecutor;
     private PreviewView previewView;
@@ -73,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<String> list;
     long tempTimeB;
 
-    String linkurl, parsing;
+    String linkurl, parsing, price;
     String server = "barcode";
     TextToSpeech tts;
     float ttsspeed;
@@ -84,18 +87,53 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        UserDatabase database = Room.databaseBuilder(getApplicationContext(), UserDatabase.class, "db")
+                .fallbackToDestructiveMigration()
+                .allowMainThreadQueries()
+                .build();
+
+        mUserDao = database.userDao();
+
+        //데이터 삽입
+        // User 객체가 있는지 확인하고, 없으면 생성하여 데이터베이스에 삽입
+        if (mUserDao.getUserAll().isEmpty()) {
+            User user = new User();
+            user.setServer("barcode");
+            user.setTtsspeed(5.0f);
+            mUserDao.setInsertUser(user);
+        }
+
+        //데이터 조회
+        List<User> userList = mUserDao.getUserAll();
+//        for(int i=0; i<userList.size(); i++){
+//            Log.d("Test", userList.get(i).getServer() + " " + userList.get(i).getTtsspeed());
+//        }
+
+       // 데이터 수정
+//        User user2 = new User();
+//        user2.setId(1);
+//        user2.setServer("barcode");
+//        user2.setTtsspeed(7.0f);
+//
+//        mUserDao.setUpdateUser(user2);
+
+        // 데이터 삭제
+//        User user3 = new User();
+//        user3.setId(2);
+//        mUserDao.setDeleteUser(user3);
+
+        // 기존
         list = new ArrayList<String>();
 
         init();
 
+        ttsspeed = mUserDao.getTtsSpeed();
 
         tts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status) {
                 if (status != ERROR) {
-                    Intent intent = getIntent();
-                    ttsspeed = intent.getFloatExtra("Speed", 5.0f);
-
+                    ttsspeed = mUserDao.getTtsSpeed();
                     tts.setLanguage(Locale.KOREAN);
                     tts.setSpeechRate(ttsspeed);
                 }
@@ -167,8 +205,7 @@ public class MainActivity extends AppCompatActivity {
                     new BarcodeScannerOptions.Builder()
                             .setBarcodeFormats(
                                     Barcode.FORMAT_EAN_13,
-                                    Barcode.FORMAT_QR_CODE,
-                                    Barcode.FORMAT_AZTEC)
+                                    Barcode.FORMAT_QR_CODE)
                             .build();
             BarcodeScanner scanner = BarcodeScanning.getClient(options);
             Task<List<Barcode>> result = scanner.process(inputImage)
@@ -222,26 +259,22 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case Barcode.TYPE_PRODUCT:
                         if(barcode.getRawValue().length() == 13){
-
                             list.add(barcode.getRawValue());
-                            Intent intent = getIntent();
-                            if(intent.hasExtra("Server")){
-                                server = intent.getStringExtra("Server");
-                            }
+                            server = mUserDao.getServer();
                             if(list.size() >= 3){
                                 if(list.get(0).equals(list.get(1)) && list.get(1).equals(list.get(2))){
                                     closeCamera();
                                     parsing = "";
+                                    price = "";
                                     JsoupAsyncTask jsoupAsyncTask = new JsoupAsyncTask();
                                     linkurl = "http://sundaelove.iptime.org:8080/ShowYourThings/" + server + "/" + barcode.getRawValue();
-                                    Toast.makeText(MainActivity.this, barcode.getRawValue().toString(), Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(MainActivity.this, barcode.getRawValue().toString() + server, Toast.LENGTH_SHORT).show();
                                     jsoupAsyncTask.execute();
 
                                     list.clear();
                                 }
                                 else{
-                                    Toast.makeText(MainActivity.this, "다시 찍어주세요", Toast.LENGTH_SHORT).show();
-                                    tts.speak("다시 찍어주세요", TextToSpeech.QUEUE_FLUSH, null);
+                                    tts.speak("초점이 맞지 않습니다.", TextToSpeech.QUEUE_FLUSH, null);
                                     list.clear();
                                 }
 
@@ -253,6 +286,7 @@ public class MainActivity extends AppCompatActivity {
                         if(barcode.getRawValue() != null){
                             closeCamera();
                             parsing = "";
+                            price = "";
                             JsoupAsyncTask jsoupAsyncTask = new JsoupAsyncTask();
                             linkurl = "http://sundaelove.iptime.org:8080/ShowYourThings/barcode2/" + barcode.getRawValue().toString();
                             jsoupAsyncTask.execute();
@@ -284,6 +318,15 @@ public class MainActivity extends AppCompatActivity {
                         parsing += link.text();
                     }
 
+                    String priceUrl = "https://search.shopping.naver.com/search/all?query=" + parsing;
+
+                    Document priceDoc = Jsoup.connect(priceUrl).get();
+                    Elements priceLinks = priceDoc.select("div.basicList_price_area__K7DDT span.price_num__S2p_v");
+
+                    for (Element link : priceLinks){
+                        price = link.text();
+                    }
+
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -297,17 +340,19 @@ public class MainActivity extends AppCompatActivity {
                 if(parsing.equals("not found")){
                     tts.speak("데이터베이스에 없는 제품입니다.", TextToSpeech.QUEUE_FLUSH, null);
                     parsing = null;
+                    price = null;
                     alertdg();
                     //init();
 
                 }
                 else if(parsing != null & !(parsing.equals("not found"))){
-                    tts.speak(parsing, TextToSpeech.QUEUE_FLUSH, null);
+                    tts.speak(parsing + "네이버 가격" + price, TextToSpeech.QUEUE_FLUSH, null);
                     alertdg();
                 }
                 else {
                     tts.speak("에러 발생", TextToSpeech.QUEUE_FLUSH, null);
                     parsing = null;
+                    price = null;
                     alertdg();
                 }
             }
@@ -382,7 +427,7 @@ public class MainActivity extends AppCompatActivity {
         builder.setCancelable(false);
         builder.setTitle("바코드 인식 결과");
         if(parsing != null){
-            builder.setMessage(parsing);
+            builder.setMessage(parsing + "\n네이버쇼핑 가격" + price);
         }
         else{builder.setMessage("데이터베이스에 없는 제품입니다.");}
 
@@ -397,7 +442,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
                 Intent intent = new Intent(MainActivity.this, SubActivity.class);
-                intent.putExtra("mainSpeed", ttsspeed);
                 startActivity(intent);
             }
         }).show();
