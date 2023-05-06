@@ -35,6 +35,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentManager;
 import androidx.room.Room;
 
+import com.chaquo.python.android.AndroidPlatform;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -60,10 +61,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-
+import com.chaquo.python.Python;
+import com.chaquo.python.PyObject;
 
 public class MainActivity extends AppCompatActivity {
 
+    private Python python;
     private UserDao mUserDao;
     private ListenableFuture cameraProviderFuture;
     private ExecutorService cameraExecutor;
@@ -78,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
 
     String linkurl, parsing, price;
     String server = "barcode";
+    String productNameStr;
     TextToSpeech tts;
     float ttsspeed;
 
@@ -93,6 +97,12 @@ public class MainActivity extends AppCompatActivity {
                 .build();
 
         mUserDao = database.userDao();
+
+        if (!Python.isStarted()) {
+            Python.start(new AndroidPlatform(this));
+        }
+
+        python = Python.getInstance();
 
         //데이터 삽입
         // User 객체가 있는지 확인하고, 없으면 생성하여 데이터베이스에 삽입
@@ -148,23 +158,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
-    /*@SuppressLint("MissingSuperCall")
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if(requestCode == 101 && grantResults.length > 0){
-            ProcessCameraProvider processCameraProvider = null;
-            try {
-                processCameraProvider = (ProcessCameraProvider) cameraProviderFuture.get();
-            } catch (ExecutionException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            bindpreview(processCameraProvider);
-
-        }
-    }*/
 
     private void bindpreview(ProcessCameraProvider processCameraProvider){
         Preview preview = new Preview.Builder().build();
@@ -266,15 +259,26 @@ public class MainActivity extends AppCompatActivity {
                                     closeCamera();
                                     parsing = "";
                                     price = "";
-                                    JsoupAsyncTask jsoupAsyncTask = new JsoupAsyncTask();
-                                    linkurl = "http://sundaelove.iptime.org:8080/ShowYourThings/" + server + "/" + barcode.getRawValue();
-                                    jsoupAsyncTask.execute();
+                                    productNameStr = "";
+                                    if(server.equals("barcode") || server.equals("barcode2")){
+                                        JsoupAsyncTask jsoupAsyncTask = new JsoupAsyncTask();
+                                        linkurl = "http://sundaelove.iptime.org:8080/ShowYourThings/" + server + "/" + barcode.getRawValue();
+                                        jsoupAsyncTask.execute();
+                                    }
+                                    else if (server.equals("api1")){
+                                        PyObject pyObject = python.getModule("main");
+                                        PyObject product_name = pyObject.callAttr("Useapi", barcode.getRawValue());
+                                        productNameStr = product_name.toString();
 
+                                        ApiJsoupAsyncTask apiJsoupAsyncTask = new ApiJsoupAsyncTask();
+                                        apiJsoupAsyncTask.execute();
+                                    }
                                     list.clear();
                                     if(mUserDao.getServer().equals("barcode")){
                                         Toast.makeText(MainActivity.this, "코리안넷에 바코드번호" + barcode.getRawValue().toString() + "를 검색합니다.", Toast.LENGTH_SHORT).show();
                                     }
                                     else if(mUserDao.getServer().equals("barcode2")){ Toast.makeText(MainActivity.this, "소비자24에 바코드번호" + barcode.getRawValue().toString() + "를 검색합니다.", Toast.LENGTH_SHORT).show(); }
+                                    else if(mUserDao.getServer().equals("api1")){ Toast.makeText(MainActivity.this, "API를 이용해 바코드번호" + barcode.getRawValue().toString() + "를 검색합니다.", Toast.LENGTH_SHORT).show(); }
 
                                 }
                                 else{
@@ -350,11 +354,11 @@ public class MainActivity extends AppCompatActivity {
 
                 }
                 else if(!(parsing.equals("not found"))){
-                    if (price != null & price != ""){
-                        tts.speak(parsing + "네이버 쇼핑 가격" + price, TextToSpeech.QUEUE_FLUSH, null);
+                    if (price != null && !(price.isEmpty())){
+                        tts.speak(parsing + " 네이버 쇼핑 가격" + price, TextToSpeech.QUEUE_FLUSH, null);
                     }
                     else {
-                        tts.speak(parsing + "가격 조회 불가" + price, TextToSpeech.QUEUE_FLUSH, null);
+                        tts.speak(parsing + " 가격 조회 불가" + price, TextToSpeech.QUEUE_FLUSH, null);
                     }
                     alertdg();
                 }
@@ -362,6 +366,43 @@ public class MainActivity extends AppCompatActivity {
                     tts.speak("에러 발생", TextToSpeech.QUEUE_FLUSH, null);
                     parsing = null;
                     price = null;
+                    alertdg();
+                }
+            }
+        }
+
+        private class ApiJsoupAsyncTask extends AsyncTask<Void, Void, Void> {
+
+            @Override
+            protected void onPreExecute() {
+                super.onPreExecute();
+            }
+
+            @Override
+            protected Void doInBackground(Void... voids) {
+                try {
+
+                    String priceUrl2 = "https://search.shopping.naver.com/search/all?query=" + productNameStr;
+
+                    Document priceDoc = Jsoup.connect(priceUrl2).get();
+                    Elements priceLinks = priceDoc.select("div.basicList_price_area__K7DDT span.price_num__S2p_v");
+
+                    for (Element link : priceLinks) {
+                        price = link.text();
+                    }
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                return null;
+
+            }
+
+            @Override
+            protected void onPostExecute(Void unused) {
+                if (price != null && !(price.isEmpty())) {
+                    tts.speak(productNameStr + " 네이버 쇼핑 가격" + price, TextToSpeech.QUEUE_FLUSH, null);
                     alertdg();
                 }
             }
@@ -435,11 +476,17 @@ public class MainActivity extends AppCompatActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setCancelable(false);
         builder.setTitle("바코드 인식 결과");
-        if(parsing != null){
-            if(price != null & price != ""){
+        if(parsing != null && !(parsing.isEmpty())){
+            if(price != null && !(price.isEmpty())){
                 builder.setMessage(parsing + "\n네이버쇼핑 가격" + price);
             }
             else{builder.setMessage(parsing + "\n가격 조회 불가" + price);}
+        }
+        else if(productNameStr != null && !(productNameStr.isEmpty())){
+            if(price != null && !(price.isEmpty())){
+                builder.setMessage(productNameStr + "\n네이버쇼핑 가격" + price);
+            }
+            else{builder.setMessage(productNameStr + "\n가격 조회 불가" + price);}
         }
         else{builder.setMessage("데이터베이스에 없는 제품입니다.");}
 

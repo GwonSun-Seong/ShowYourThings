@@ -44,6 +44,17 @@
             android:src="@drawable/sobija24"
             android:contentDescription="소비자 24로 변경"/>
 
+
+        <ImageButton
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="100dp"
+            android:id="@+id/api"
+            android:layout_margin="5dp"
+            android:src="@drawable/apiicon"
+            android:contentDescription="api로 변경"/>
+
+
     </LinearLayout>
 
     <ImageButton

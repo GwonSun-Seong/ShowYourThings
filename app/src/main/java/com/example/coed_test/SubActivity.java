@@ -2,6 +2,7 @@ package com.example.coed_test;
 
 import static android.speech.tts.TextToSpeech.ERROR;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
@@ -24,17 +25,12 @@ import java.util.Locale;
 public class SubActivity extends AppCompatActivity {
 
     private UserDao mUserDao;
-    //Button speedup, speeddown, goback; server1, server2;
-    ImageButton server1, server2, goback, help;
+    ImageButton server1, server2, api, goback, help;
     Switch serverselect;
     SeekBar ttsbar;
     TextToSpeech tts;
     float Subttsspeed;
     String server;
-    //private RadioGroup rg;
-    //private RadioButton rb1, rb2;
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,15 +49,10 @@ public class SubActivity extends AppCompatActivity {
         Subttsspeed = mUserDao.getTtsSpeed();
 
 
-        //speedup = findViewById(R.id.tts_speed_up);
-        //speeddown = findViewById(R.id.tts_speed_down);
         goback = findViewById(R.id.goback);
-        //rg =  findViewById(R.id.radioGroup);
-        //rb1 = findViewById(R.id.radioButton);
-        //rb2 = findViewById(R.id.radioButton2);
-        //serverselect = findViewById(R.id.server12);
         server1 = findViewById(R.id.server1);
         server2 = findViewById(R.id.server2);
+        api = findViewById(R.id.api);
         ttsbar = findViewById(R.id.seekBar);
         help = findViewById(R.id.help);
 
@@ -118,41 +109,22 @@ public class SubActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
-        /*serverselect.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        api.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                if(b){
-                    Intent intent = new Intent(SubActivity.this, MainActivity.class);
-                    intent.putExtra("Server", "barcode2");
-                    finish();
-                    startActivity(intent);
-                }
-                else{
-                    Intent intent = new Intent(SubActivity.this, MainActivity.class);
-                    intent.putExtra("Server", "barcode");
-                    finish();
-                    startActivity(intent);
-                }
+            public void onClick(View view) {
+                Intent intent = new Intent(SubActivity.this, MainActivity.class);
+                User user8 = new User();
+                user8.setId(1);
+                user8.setServer("api1");
+                user8.setTtsspeed(Subttsspeed);
+
+                mUserDao.setUpdateUser(user8);
+
+                tts.speak("API로 바코드 검색", TextToSpeech.QUEUE_FLUSH, null);
+                finish();
+                startActivity(intent);
             }
         });
-        rg.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(RadioGroup radioGroup, int i) {
-                if(i == R.id.radioButton2){
-                    Intent intent = new Intent(SubActivity.this, MainActivity.class);
-                    intent.putExtra("Server", "barcode2");
-                    finish();
-                    startActivity(intent);
-                }
-                else{
-                    Intent intent = new Intent(SubActivity.this, MainActivity.class);
-                    intent.putExtra("Server", "barcode");
-                    finish();
-                    startActivity(intent);
-                }
-
-            }
-        });*/
 
         goback.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -171,25 +143,6 @@ public class SubActivity extends AppCompatActivity {
             }
         });
 
-        /*speedup.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Subttsspeed = Subttsspeed + 1f;
-                tts.setSpeechRate(Subttsspeed);
-                tts.speak("tts 속도가" + Subttsspeed.toString() + "으로 증가하였습니다.", TextToSpeech.QUEUE_FLUSH, null);
-
-            }
-        });
-
-        speeddown.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Subttsspeed = Subttsspeed - 1f;
-                tts.setSpeechRate(Subttsspeed);
-                tts.speak("tts 속도가" + Subttsspeed.toString() + "으로 감소하였습니다.", TextToSpeech.QUEUE_FLUSH, null);
-
-            }
-        });*/
         ttsbar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
