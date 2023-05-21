@@ -18,4 +18,9 @@ def Useapi(barcode):
     # 파싱한 XML에서 원하는 데이터를 추출합니다.
     for item in root.iter("row"):
         prdlst_nm = item.find("PRDLST_NM").text
-        return prdlst_nm
+        if prdlst_nm is not None:
+            return prdlst_nm
+
+    # prdlst_nm 값이 없는 경우 데이터베이스에 없는 제품으로 간주하고 알립니다.
+    return "not found"
+

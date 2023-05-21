@@ -81,7 +81,8 @@ public class MainActivity extends AppCompatActivity {
 
     String linkurl, parsing, price;
     String server = "barcode";
-    String productNameStr;
+    String tempbarcode;
+    String firstPrice, secondPrice;
     TextToSpeech tts;
     float ttsspeed;
 
@@ -173,7 +174,7 @@ public class MainActivity extends AppCompatActivity {
         processCameraProvider.bindToLifecycle(this , cameraSelector, preview, imageCapture, imageAnalysis);
     }
 
-    public class MyImageAnalyzer implements ImageAnalysis.Analyzer{
+    public class MyImageAnalyzer implements ImageAnalysis.Analyzer {
         private FragmentManager fragmentManager;
         private bottom_dialog bd;
 
@@ -226,7 +227,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         private void readerBarcodeData(List<Barcode> barcodes) {
-            for (Barcode barcode: barcodes) {
+            for (Barcode barcode : barcodes) {
                 Rect bounds = barcode.getBoundingBox();
                 Point[] corners = barcode.getCornerPoints();
 
@@ -241,7 +242,7 @@ public class MainActivity extends AppCompatActivity {
                         int type = barcode.getWifi().getEncryptionType();
                         break;
                     case Barcode.TYPE_URL:
-                        if (!bd.isAdded()){
+                        if (!bd.isAdded()) {
                             bd.show(fragmentManager, "");
                         }
                         bd.fetchurl(barcode.getUrl().getUrl());
@@ -251,37 +252,44 @@ public class MainActivity extends AppCompatActivity {
                         String url = barcode.getUrl().getUrl();
                         break;
                     case Barcode.TYPE_PRODUCT:
-                        if(barcode.getRawValue().length() == 13){
+                        if (barcode.getRawValue().length() == 13) {
                             list.add(barcode.getRawValue());
                             server = mUserDao.getServer();
-                            if(list.size() >= 3){
-                                if(list.get(0).equals(list.get(1)) && list.get(1).equals(list.get(2))){
+                            tempbarcode = barcode.getRawValue();
+                            if (list.size() >= 3) {
+                                if (list.get(0).equals(list.get(1)) && list.get(1).equals(list.get(2))) {
                                     closeCamera();
                                     parsing = "";
                                     price = "";
-                                    productNameStr = "";
-                                    if(server.equals("barcode") || server.equals("barcode2")){
+                                    if (server.equals("barcode") || server.equals("barcode2")) {
                                         JsoupAsyncTask jsoupAsyncTask = new JsoupAsyncTask();
                                         linkurl = "http://sundaelove.iptime.org:8080/ShowYourThings/" + server + "/" + barcode.getRawValue();
                                         jsoupAsyncTask.execute();
-                                    }
-                                    else if (server.equals("api1")){
+
+                                        PriceAsyncTask priceAsyncTask = new PriceAsyncTask();
+                                        priceAsyncTask.execute();
+
+
+                                    } else if (server.equals("api1")) {
                                         PyObject pyObject = python.getModule("main");
                                         PyObject product_name = pyObject.callAttr("Useapi", barcode.getRawValue());
-                                        productNameStr = product_name.toString();
+                                        parsing = product_name.toString();
 
-                                        ApiJsoupAsyncTask apiJsoupAsyncTask = new ApiJsoupAsyncTask();
-                                        apiJsoupAsyncTask.execute();
+
+                                        PriceAsyncTask priceAsyncTask = new PriceAsyncTask();
+                                        priceAsyncTask.execute();
+
                                     }
                                     list.clear();
-                                    if(mUserDao.getServer().equals("barcode")){
+                                    if (mUserDao.getServer().equals("barcode")) {
                                         Toast.makeText(MainActivity.this, "코리안넷에 바코드번호" + barcode.getRawValue().toString() + "를 검색합니다.", Toast.LENGTH_SHORT).show();
+                                    } else if (mUserDao.getServer().equals("barcode2")) {
+                                        Toast.makeText(MainActivity.this, "소비자24에 바코드번호" + barcode.getRawValue().toString() + "를 검색합니다.", Toast.LENGTH_SHORT).show();
+                                    } else if (mUserDao.getServer().equals("api1")) {
+                                        Toast.makeText(MainActivity.this, "API를 이용해 바코드번호" + barcode.getRawValue().toString() + "를 검색합니다.", Toast.LENGTH_SHORT).show();
                                     }
-                                    else if(mUserDao.getServer().equals("barcode2")){ Toast.makeText(MainActivity.this, "소비자24에 바코드번호" + barcode.getRawValue().toString() + "를 검색합니다.", Toast.LENGTH_SHORT).show(); }
-                                    else if(mUserDao.getServer().equals("api1")){ Toast.makeText(MainActivity.this, "API를 이용해 바코드번호" + barcode.getRawValue().toString() + "를 검색합니다.", Toast.LENGTH_SHORT).show(); }
 
-                                }
-                                else{
+                                } else {
                                     tts.speak("초점이 맞지 않습니다.", TextToSpeech.QUEUE_FLUSH, null);
                                     list.clear();
                                 }
@@ -291,23 +299,25 @@ public class MainActivity extends AppCompatActivity {
                         }
                         break;
                     case Barcode.TYPE_ISBN:
-                        if(barcode.getRawValue() != null){
+                        if (barcode.getRawValue() != null) {
                             closeCamera();
                             parsing = "";
                             price = "";
+                            tempbarcode = barcode.getRawValue();
                             JsoupAsyncTask jsoupAsyncTask = new JsoupAsyncTask();
                             linkurl = "http://sundaelove.iptime.org:8080/ShowYourThings/barcode2/" + barcode.getRawValue().toString();
                             jsoupAsyncTask.execute();
 
                             list.clear();
+                        } else {
                         }
-                        else {}
 
                         break;
 
                 }
             }
         }
+    }
         private class JsoupAsyncTask extends AsyncTask<String, Void, Void> {
 
             @Override
@@ -326,14 +336,14 @@ public class MainActivity extends AppCompatActivity {
                         parsing += link.text();
                     }
 
-                    String priceUrl = "https://search.shopping.naver.com/search/all?query=" + parsing;
+                    /*String priceUrl = "https://search.shopping.naver.com/search/all?query=" + parsing;
 
                     Document priceDoc = Jsoup.connect(priceUrl).get();
                     Elements priceLinks = priceDoc.select("div.basicList_price_area__K7DDT span.price_num__S2p_v");
 
                     for (Element link : priceLinks){
                         price = link.text();
-                    }
+                    }*/
 
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -345,70 +355,77 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             protected void onPostExecute(Void unused) {
-                if(parsing.equals("not found")){
-                    tts.speak("데이터베이스에 없는 제품입니다.", TextToSpeech.QUEUE_FLUSH, null);
+                /*if(parsing.equals("not found")){
+                    //tts.speak("데이터베이스에 없는 제품입니다.", TextToSpeech.QUEUE_FLUSH, null);
                     parsing = null;
-                    price = null;
+                    firstPrice = null;
+                    secondPrice = null;
                     alertdg();
                     //init();
 
-                }
-                else if(!(parsing.equals("not found"))){
-                    if (price != null && !(price.isEmpty())){
-                        tts.speak(parsing + " 네이버 쇼핑 가격" + price, TextToSpeech.QUEUE_FLUSH, null);
-                    }
-                    else {
-                        tts.speak(parsing + " 가격 조회 불가" + price, TextToSpeech.QUEUE_FLUSH, null);
-                    }
-                    alertdg();
-                }
-                else {
-                    tts.speak("에러 발생", TextToSpeech.QUEUE_FLUSH, null);
-                    parsing = null;
-                    price = null;
-                    alertdg();
-                }
+                }*/
             }
         }
 
-        private class ApiJsoupAsyncTask extends AsyncTask<Void, Void, Void> {
+    private class PriceAsyncTask extends AsyncTask<String, Void, Void> {
 
-            @Override
-            protected void onPreExecute() {
-                super.onPreExecute();
-            }
-
-            @Override
-            protected Void doInBackground(Void... voids) {
-                try {
-
-                    String priceUrl2 = "https://search.shopping.naver.com/search/all?query=" + productNameStr;
-
-                    Document priceDoc = Jsoup.connect(priceUrl2).get();
-                    Elements priceLinks = priceDoc.select("div.basicList_price_area__K7DDT span.price_num__S2p_v");
-
-                    for (Element link : priceLinks) {
-                        price = link.text();
-                    }
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                return null;
-
-            }
-
-            @Override
-            protected void onPostExecute(Void unused) {
-                if (price != null && !(price.isEmpty())) {
-                    tts.speak(productNameStr + " 네이버 쇼핑 가격" + price, TextToSpeech.QUEUE_FLUSH, null);
-                    alertdg();
-                }
-            }
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
         }
 
+        @Override
+        protected Void doInBackground(String... urls) {
+            String url1 = "https://search.danawa.com/dsearch.php?k1=" + parsing;
+            String url2 = "https://search.shopping.naver.com/search/all?query=" + parsing;
+            try {
+                Document doc1 = Jsoup.connect(url1).get();
+                Element priceElement1 = doc1.select("p.price_sect strong").first();
+                firstPrice = priceElement1 != null ? priceElement1.text() : "";
+
+                Document doc2 = Jsoup.connect(url2).get();
+                Element priceElement2 = doc2.select("div.basicList_price_area__K7DDT span.price_num__S2p_v").first();
+                secondPrice = priceElement2 != null ? priceElement2.text() : "";
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void unused) {
+            super.onPostExecute(unused);
+            if(parsing.equals("not found")){
+                tts.speak("데이터베이스에 없는 제품입니다.", TextToSpeech.QUEUE_FLUSH, null);
+                parsing = null;
+                firstPrice = null;
+                secondPrice = null;
+
+            }
+            else if(!(parsing.equals("not found"))){
+                if(firstPrice != null && secondPrice != null){
+                    tts.speak(parsing + "다나와 가격" + firstPrice + "원" + " 네이버 가격" + secondPrice, TextToSpeech.QUEUE_FLUSH, null);
+                }
+                else if (firstPrice == null && secondPrice != null){
+                    tts.speak(parsing + "다나와 가격 조회 불가" + " 네이버 가격" + secondPrice, TextToSpeech.QUEUE_FLUSH, null);
+                }
+                else if(firstPrice != null && secondPrice == null){
+                    tts.speak(parsing + "다나와 가격" +  firstPrice + "원" + " 네이버 가격 조회 불가", TextToSpeech.QUEUE_FLUSH, null);
+                }
+                else{
+                    tts.speak(parsing + "가격 조회 불가", TextToSpeech.QUEUE_FLUSH, null);
+                }
+            }
+            else {
+                tts.speak("에러 발생", TextToSpeech.QUEUE_FLUSH, null);
+                parsing = null;
+                firstPrice = null;
+                secondPrice = null;
+            }
+            alertdg();
+        }
     }
+
     private void closeCamera(){
         if (cameraProviderFuture != null && cameraExecutor != null){
             cameraProviderFuture.cancel(true);
@@ -477,18 +494,21 @@ public class MainActivity extends AppCompatActivity {
         builder.setCancelable(false);
         builder.setTitle("바코드 인식 결과");
         if(parsing != null && !(parsing.isEmpty())){
-            if(price != null && !(price.isEmpty())){
-                builder.setMessage(parsing + "\n네이버쇼핑 가격" + price);
+            if(firstPrice != null && secondPrice != null){
+                builder.setMessage(parsing + "\n다나와 가격" + firstPrice + "원" + "\n네이버 가격" + secondPrice);
+            }
+            else if (firstPrice == null && secondPrice != null){
+                builder.setMessage(parsing + "\n다나와 가격 조회 불가" + "\n네이버 가격" + secondPrice);
+            }
+            else if(firstPrice != null && secondPrice == null){
+                builder.setMessage(parsing + "\n다나와 가격" + firstPrice + "원" + "\n네이버 가격 조회 불가");
             }
             else{builder.setMessage(parsing + "\n가격 조회 불가" + price);}
         }
-        else if(productNameStr != null && !(productNameStr.isEmpty())){
-            if(price != null && !(price.isEmpty())){
-                builder.setMessage(productNameStr + "\n네이버쇼핑 가격" + price);
-            }
-            else{builder.setMessage(productNameStr + "\n가격 조회 불가" + price);}
+        else if (parsing != null && parsing.equals("not found")){
+            builder.setMessage("데이터베이스에 없는 제품입니다.");
+            tts.speak("데이터베이스에 없는 제품입니다", TextToSpeech.QUEUE_FLUSH, null);
         }
-        else{builder.setMessage("데이터베이스에 없는 제품입니다.");}
 
         builder.setPositiveButton("확인", new DialogInterface.OnClickListener() {
             @Override

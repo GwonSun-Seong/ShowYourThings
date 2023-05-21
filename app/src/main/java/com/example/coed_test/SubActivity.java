@@ -74,7 +74,7 @@ public class SubActivity extends AppCompatActivity {
         help.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                tts.speak("카메라와 인식 대상과의 거리를 10cm에서 30cm 정도로 유지해주세요. 인식 될 때까지 물건을 회전시켜주세요. 손이 바코드를 가리거나, 빛이 반사 될 경우 인식이 어렵습니다.", TextToSpeech.QUEUE_FLUSH, null);
+                tts.speak("카메라와 인식 대상과의 거리를 10cm에서 30cm 정도로 유지해주세요. 인식 될 때까지 물건을 회전시켜주세요. 손이 바코드를 가리거나, 빛이 반사 될 경우 인식이 어렵습니다. 바코드를 가리지 않도록 물체의 가장자리를 잡아주세요.", TextToSpeech.QUEUE_FLUSH, null);
             }
         });
         server1.setOnClickListener(new View.OnClickListener() {
