@@ -28,7 +28,8 @@
                 android:layout_height="300dp"
                 android:layout_centerHorizontal="true"
                 android:layout_centerInParent="true"
-                android:id="@+id/image"/>
+                android:id="@+id/image"
+                android:background="@drawable/background_image2"/>
 
 
         </RelativeLayout>

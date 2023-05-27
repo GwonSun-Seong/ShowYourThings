@@ -52,7 +52,7 @@
             android:id="@+id/api"
             android:layout_margin="5dp"
             android:src="@drawable/apiicon"
-            android:contentDescription="api로 변경"/>
+            android:contentDescription="에이피아이로 변경"/>
 
 
     </LinearLayout>

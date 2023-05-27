@@ -17,6 +17,9 @@ import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.util.Size;
 import android.view.KeyEvent;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -64,6 +67,10 @@ import java.util.concurrent.Executors;
 import com.chaquo.python.Python;
 import com.chaquo.python.PyObject;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.widget.ImageView;
+
 public class MainActivity extends AppCompatActivity {
 
     private Python python;
@@ -85,6 +92,10 @@ public class MainActivity extends AppCompatActivity {
     String firstPrice, secondPrice;
     TextToSpeech tts;
     float ttsspeed;
+
+    private ImageView imageView;
+    private Animation fadeInAnimation;
+    private Animation fadeOutAnimation;
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
@@ -136,6 +147,30 @@ public class MainActivity extends AppCompatActivity {
         // 기존
         list = new ArrayList<String>();
 
+        imageView = findViewById(R.id.image);
+        fadeInAnimation = new AlphaAnimation(0.0f, 1.0f);
+        fadeInAnimation.setDuration(1000);
+        fadeOutAnimation = new AlphaAnimation(1.0f, 0.0f);
+        fadeOutAnimation.setDuration(1000);
+        fadeOutAnimation.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                // 애니메이션 시작 시 작업 수행
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                // 애니메이션 종료 시 작업 수행
+                imageView.setBackgroundResource(R.drawable.background_image2);
+                imageView.startAnimation(fadeInAnimation);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+                // 애니메이션 반복 시 작업 수행
+            }
+        });
+
         init();
 
         ttsspeed = mUserDao.getTtsSpeed();
@@ -150,6 +185,11 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+    private void startBarcodeRecognitionAnimation() {
+        // 배경 이미지 변경
+        imageView.setBackgroundResource(R.drawable.background_image2);
+        imageView.startAnimation(fadeOutAnimation);
     }
 
     private void requestCameraPermission() {
@@ -242,6 +282,7 @@ public class MainActivity extends AppCompatActivity {
                         int type = barcode.getWifi().getEncryptionType();
                         break;
                     case Barcode.TYPE_URL:
+                        closeCamera();
                         if (!bd.isAdded()) {
                             bd.show(fragmentManager, "");
                         }
@@ -253,6 +294,7 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case Barcode.TYPE_PRODUCT:
                         if (barcode.getRawValue().length() == 13) {
+                            startBarcodeRecognitionAnimation();
                             list.add(barcode.getRawValue());
                             server = mUserDao.getServer();
                             tempbarcode = barcode.getRawValue();
@@ -290,6 +332,7 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
                                 } else {
+                                    Toast.makeText(MainActivity.this, "초점이 맞지 않습니다.", Toast.LENGTH_SHORT).show();
                                     tts.speak("초점이 맞지 않습니다.", TextToSpeech.QUEUE_FLUSH, null);
                                     list.clear();
                                 }
@@ -301,15 +344,20 @@ public class MainActivity extends AppCompatActivity {
                     case Barcode.TYPE_ISBN:
                         if (barcode.getRawValue() != null) {
                             closeCamera();
+                            list.clear();
                             parsing = "";
                             price = "";
-                            tempbarcode = barcode.getRawValue();
                             JsoupAsyncTask jsoupAsyncTask = new JsoupAsyncTask();
                             linkurl = "http://sundaelove.iptime.org:8080/ShowYourThings/barcode2/" + barcode.getRawValue().toString();
                             jsoupAsyncTask.execute();
 
-                            list.clear();
+                            PriceAsyncTask priceAsyncTask = new PriceAsyncTask();
+                            priceAsyncTask.execute();
+
                         } else {
+                            closeCamera();
+                            tts.speak("데이터베이스에 없는 ISBN 입니다.", TextToSpeech.QUEUE_FLUSH, null);
+                            init();
                         }
 
                         break;
@@ -384,8 +432,9 @@ public class MainActivity extends AppCompatActivity {
                 firstPrice = priceElement1 != null ? priceElement1.text() : "";
 
                 Document doc2 = Jsoup.connect(url2).get();
-                Element priceElement2 = doc2.select("div.basicList_price_area__K7DDT span.price_num__S2p_v").first();
+                Element priceElement2 = doc2.select("span.price_num__S2p_v").first();
                 secondPrice = priceElement2 != null ? priceElement2.text() : "";
+
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -402,25 +451,19 @@ public class MainActivity extends AppCompatActivity {
                 secondPrice = null;
 
             }
-            else if(!(parsing.equals("not found"))){
+            else{
                 if(firstPrice != null && secondPrice != null){
-                    tts.speak(parsing + "다나와 가격" + firstPrice + "원" + " 네이버 가격" + secondPrice, TextToSpeech.QUEUE_FLUSH, null);
+                    tts.speak(parsing + "다나와 가격" + firstPrice + "원 네이버 가격" + secondPrice, TextToSpeech.QUEUE_FLUSH, null);
                 }
                 else if (firstPrice == null && secondPrice != null){
-                    tts.speak(parsing + "다나와 가격 조회 불가" + " 네이버 가격" + secondPrice, TextToSpeech.QUEUE_FLUSH, null);
+                    tts.speak(parsing + "다나와 가격 조회 불가 네이버 가격" + secondPrice, TextToSpeech.QUEUE_FLUSH, null);
                 }
                 else if(firstPrice != null && secondPrice == null){
-                    tts.speak(parsing + "다나와 가격" +  firstPrice + "원" + " 네이버 가격 조회 불가", TextToSpeech.QUEUE_FLUSH, null);
+                    tts.speak(parsing + "다나와 가격" +  firstPrice + "원 네이버 가격 조회 불가", TextToSpeech.QUEUE_FLUSH, null);
                 }
                 else{
                     tts.speak(parsing + "가격 조회 불가", TextToSpeech.QUEUE_FLUSH, null);
                 }
-            }
-            else {
-                tts.speak("에러 발생", TextToSpeech.QUEUE_FLUSH, null);
-                parsing = null;
-                firstPrice = null;
-                secondPrice = null;
             }
             alertdg();
         }
