@@ -1,14 +1,10 @@
-package com.example.coed_test;
-
-import static android.speech.tts.TextToSpeech.ERROR;
+package com.ShowYourThings.coed_test;
 
 import android.content.Intent;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.speech.tts.TextToSpeech;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,15 +14,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
-import java.io.IOException;
-import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -79,5 +68,12 @@ public class bottom_dialog extends BottomSheetDialogFragment {
         });
     }
 
+    @Override
+    public void dismiss() {
+        super.dismiss();
 
+        MainActivity mainActivity = (MainActivity) getActivity();
+        mainActivity.closeCamera();
+        mainActivity.init();
+    }
 }

@@ -1,4 +1,4 @@
-package com.example.coed_test;
+package com.ShowYourThings.coed_test;
 
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;

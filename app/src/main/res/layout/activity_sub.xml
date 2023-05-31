@@ -94,7 +94,7 @@
         android:layout_width="wrap_content"
         android:layout_gravity="center"
         android:layout_height="50dp"
-        android:text="Show Your Things"
+        android:text="알려줘 Show Your Things"
         android:textStyle="bold"
         android:layout_marginTop="100dp"
         android:textSize="20dp"/>

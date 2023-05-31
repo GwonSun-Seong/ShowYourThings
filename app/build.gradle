@@ -4,15 +4,15 @@ plugins {
 }
 
 android {
-    namespace 'com.example.coed_test'
+    namespace 'com.ShowYourThings.coed_test'
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.example.coed_test"
+        applicationId "com.ShowYourThings.coed_test"
         minSdk 21
         targetSdk 32
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.1"
 
         ndk {
             abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"

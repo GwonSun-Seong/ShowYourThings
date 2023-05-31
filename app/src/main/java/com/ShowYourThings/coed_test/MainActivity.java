@@ -1,4 +1,4 @@
-package com.example.coed_test;
+package com.ShowYourThings.coed_test;
 
 import static android.speech.tts.TextToSpeech.ERROR;
 
@@ -14,12 +14,9 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
-import android.util.Log;
 import android.util.Size;
-import android.view.KeyEvent;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -67,8 +64,6 @@ import java.util.concurrent.Executors;
 import com.chaquo.python.Python;
 import com.chaquo.python.PyObject;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
 import android.widget.ImageView;
 
 public class MainActivity extends AppCompatActivity {
@@ -86,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<String> list;
     long tempTimeB;
 
-    String linkurl, parsing, price;
+    String linkurl, parsing;
     String server = "barcode";
     String tempbarcode;
     String firstPrice, secondPrice;
@@ -282,15 +277,15 @@ public class MainActivity extends AppCompatActivity {
                         int type = barcode.getWifi().getEncryptionType();
                         break;
                     case Barcode.TYPE_URL:
-                        closeCamera();
-                        if (!bd.isAdded()) {
+                        /*if (!bd.isAdded()) {
+                            bd.show(fragmentManager, "");
+                        }*/
+
+                        if (barcodes.size() == 1 && !bd.isAdded()) {
                             bd.show(fragmentManager, "");
                         }
                         bd.fetchurl(barcode.getUrl().getUrl());
 
-
-                        String title = barcode.getUrl().getUrl();
-                        String url = barcode.getUrl().getUrl();
                         break;
                     case Barcode.TYPE_PRODUCT:
                         if (barcode.getRawValue().length() == 13) {
@@ -302,7 +297,6 @@ public class MainActivity extends AppCompatActivity {
                                 if (list.get(0).equals(list.get(1)) && list.get(1).equals(list.get(2))) {
                                     closeCamera();
                                     parsing = "";
-                                    price = "";
                                     if (server.equals("barcode") || server.equals("barcode2")) {
                                         JsoupAsyncTask jsoupAsyncTask = new JsoupAsyncTask();
                                         linkurl = "http://sundaelove.iptime.org:8080/ShowYourThings/" + server + "/" + barcode.getRawValue();
@@ -343,10 +337,11 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case Barcode.TYPE_ISBN:
                         if (barcode.getRawValue() != null) {
+                            startBarcodeRecognitionAnimation();
+                            Toast.makeText(MainActivity.this, "도서 검색 중..", Toast.LENGTH_SHORT).show();
                             closeCamera();
                             list.clear();
                             parsing = "";
-                            price = "";
                             JsoupAsyncTask jsoupAsyncTask = new JsoupAsyncTask();
                             linkurl = "http://sundaelove.iptime.org:8080/ShowYourThings/barcode2/" + barcode.getRawValue().toString();
                             jsoupAsyncTask.execute();
@@ -354,10 +349,6 @@ public class MainActivity extends AppCompatActivity {
                             PriceAsyncTask priceAsyncTask = new PriceAsyncTask();
                             priceAsyncTask.execute();
 
-                        } else {
-                            closeCamera();
-                            tts.speak("데이터베이스에 없는 ISBN 입니다.", TextToSpeech.QUEUE_FLUSH, null);
-                            init();
                         }
 
                         break;
@@ -445,12 +436,11 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(Void unused) {
             super.onPostExecute(unused);
             if(parsing.equals("not found")){
-                tts.speak("데이터베이스에 없는 제품입니다.", TextToSpeech.QUEUE_FLUSH, null);
                 parsing = null;
                 firstPrice = null;
                 secondPrice = null;
-
             }
+
             else{
                 if(firstPrice != null && secondPrice != null){
                     tts.speak(parsing + "다나와 가격" + firstPrice + "원 네이버 가격" + secondPrice, TextToSpeech.QUEUE_FLUSH, null);
@@ -469,7 +459,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void closeCamera(){
+    public void closeCamera(){
         if (cameraProviderFuture != null && cameraExecutor != null){
             cameraProviderFuture.cancel(true);
             cameraProviderFuture = null;
@@ -477,7 +467,7 @@ public class MainActivity extends AppCompatActivity {
             cameraExecutor = null;
         }
     }
-    private void init(){
+    public void init(){
 
         previewView = findViewById(R.id.previewview);
         this.getWindow().setFlags(1024,1024);
@@ -536,21 +526,27 @@ public class MainActivity extends AppCompatActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setCancelable(false);
         builder.setTitle("바코드 인식 결과");
-        if(parsing != null && !(parsing.isEmpty())){
-            if(firstPrice != null && secondPrice != null){
-                builder.setMessage(parsing + "\n다나와 가격" + firstPrice + "원" + "\n네이버 가격" + secondPrice);
+        if (parsing != null && !parsing.isEmpty()){
+            if (firstPrice != null && secondPrice != null){
+                builder.setMessage(parsing + "\n다나와 가격" + firstPrice + "원\n네이버 가격" + secondPrice);
             }
-            else if (firstPrice == null && secondPrice != null){
-                builder.setMessage(parsing + "\n다나와 가격 조회 불가" + "\n네이버 가격" + secondPrice);
+            else {
+                if (firstPrice == null && secondPrice != null){
+                    builder.setMessage(parsing + "\n다나와 가격 조회 불가" + "\n네이버 가격" + secondPrice);
+                }
+                else if (firstPrice != null && secondPrice == null){
+                    builder.setMessage(parsing + "\n다나와 가격" + firstPrice + "원\n네이버 가격 조회 불가");
+                }
+                else{builder.setMessage(parsing + "\n가격 조회 불가");}
             }
-            else if(firstPrice != null && secondPrice == null){
-                builder.setMessage(parsing + "\n다나와 가격" + firstPrice + "원" + "\n네이버 가격 조회 불가");
-            }
-            else{builder.setMessage(parsing + "\n가격 조회 불가" + price);}
         }
-        else if (parsing != null && parsing.equals("not found")){
+        else if (parsing == null || parsing.equals("not found")){
             builder.setMessage("데이터베이스에 없는 제품입니다.");
             tts.speak("데이터베이스에 없는 제품입니다", TextToSpeech.QUEUE_FLUSH, null);
+        }
+        else {
+            builder.setMessage("Error");
+            tts.speak("에러 발생", TextToSpeech.QUEUE_FLUSH, null);
         }
 
         builder.setPositiveButton("확인", new DialogInterface.OnClickListener() {
