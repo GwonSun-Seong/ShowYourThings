@@ -4,11 +4,16 @@ import static android.speech.tts.TextToSpeech.ERROR;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.media.Image;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -66,7 +71,7 @@ import com.chaquo.python.PyObject;
 
 import android.widget.ImageView;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
     private Python python;
     private UserDao mUserDao;
@@ -92,6 +97,11 @@ public class MainActivity extends AppCompatActivity {
     private Animation fadeInAnimation;
     private Animation fadeOutAnimation;
 
+    private SensorManager sensorManager;
+    private long mShakeTime;
+    private static final float SHAKE_THRESHOLD_GRAVITY = 6f;
+    private static final int SHAKE_SKIP_TIME = 1000;
+
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -115,10 +125,40 @@ public class MainActivity extends AppCompatActivity {
         // User 객체가 있는지 확인하고, 없으면 생성하여 데이터베이스에 삽입
         if (mUserDao.getUserAll().isEmpty()) {
             User user = new User();
-            user.setServer("barcode");
-            user.setTtsspeed(5.0f);
+            user.setServer("api1");
+            user.setTtsspeed(4.0f);
             mUserDao.setInsertUser(user);
+
+            AlertDialog.Builder builder2 = new AlertDialog.Builder(MainActivity.this);
+            builder2.setCancelable(false);
+            builder2.setTitle("최초 도움말");
+            builder2.setMessage("앱 실행 후 바코드를 촬영하여 바로 사용 가능합니다. \n\n손으로 가리지 않게끔 물체의 가장자리를 잡고 회전시키며 30cm 정도의 거리를 유지할 때 인식이 쉽습니다.");
+
+            builder2.setPositiveButton("확인", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    dialogInterface.dismiss();
+
+                    AlertDialog.Builder builder3 = new AlertDialog.Builder(MainActivity.this);
+                    builder3.setCancelable(false);
+                    builder3.setTitle("최초 도움말");
+                    builder3.setMessage("현재 서버컴퓨터가 개인컴퓨터이므로 코리안넷과 소비자24를 통한 조회는 상시 사용이 불가능합니다. 조회 불가 시 API를 이용한 인식을 권장합니다.\n\n" +
+                            "조회 방법 선택, 기타 TTS 속도 설정 등은 설정화면에서 확인 가능하며 흔들거나, 바코드 인식 후 다이얼로그를 통해 설정화면으로 이동이 가능합니다.");
+
+                    builder3.setPositiveButton("확인", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            dialogInterface.dismiss();
+                            init();
+                        }
+                    }).show();
+
+                }
+            }).show();
         }
+
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
 
         //데이터 조회
         List<User> userList = mUserDao.getUserAll();
@@ -207,6 +247,39 @@ public class MainActivity extends AppCompatActivity {
         imageAnalysis.setAnalyzer(cameraExecutor, analyzer);
         processCameraProvider.unbindAll();
         processCameraProvider.bindToLifecycle(this , cameraSelector, preview, imageCapture, imageAnalysis);
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            float x = event.values[0];
+            float y = event.values[1];
+            float z = event.values[2];
+
+            float gx = x / SensorManager.GRAVITY_EARTH;
+            float gy = y / SensorManager.GRAVITY_EARTH;
+            float gz = z / SensorManager.GRAVITY_EARTH;
+
+            Float f = gx * gx + gy * gy + gz * gz;
+            double squaredD = Math.sqrt(f.doubleValue());
+            float gForce = (float) squaredD;
+            //float acceleration = (float) Math.sqrt(x * x + y * y + z * z);
+
+            if (gForce > SHAKE_THRESHOLD_GRAVITY) {
+                long currentTime = System.currentTimeMillis();
+                if(mShakeTime + SHAKE_SKIP_TIME > currentTime){
+                    return;
+                }
+                mShakeTime = currentTime;
+                Toast.makeText(MainActivity.this, "설정 화면으로 이동합니다.", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(MainActivity.this, SubActivity.class);
+                startActivity(intent);
+            }
+        }
+    }
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
     }
 
     public class MyImageAnalyzer implements ImageAnalysis.Analyzer {
@@ -500,6 +573,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         isResumed = false;
+        sensorManager.unregisterListener(this);
         closeCamera();
 
     }
@@ -518,7 +592,7 @@ public class MainActivity extends AppCompatActivity {
             tts.speak("카메라 화면", TextToSpeech.QUEUE_FLUSH, null);
             isResumed = true;
         }
-
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
         init();
     }
 

@@ -20,7 +20,6 @@ public class SubActivity extends AppCompatActivity {
 
     private UserDao mUserDao;
     ImageButton server1, server2, api, goback, help;
-    Switch serverselect;
     SeekBar ttsbar;
     TextToSpeech tts;
     float Subttsspeed;
@@ -68,7 +67,8 @@ public class SubActivity extends AppCompatActivity {
         help.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                tts.speak("카메라와 인식 대상과의 거리를 10cm에서 30cm 정도로 유지해주세요. 인식 될 때까지 물건을 회전시켜주세요. 손이 바코드를 가리거나, 빛이 반사 될 경우 인식이 어렵습니다. 바코드를 가리지 않도록 물체의 가장자리를 잡아주세요.", TextToSpeech.QUEUE_FLUSH, null);
+                tts.speak("카메라와 인식 대상과의 거리를 10cm에서 30cm 정도로 유지해주세요. 인식 될 때까지 물건을 회전시켜주세요. 손이 바코드를 가릴 경우 인식이 어렵습니다. 바코드를 가리지 않도록 물체의 가장자리를 잡아주세요." +
+                        "흔들어서 또는 인식 후 다이얼로그에서 설정화면으로 이동이 가능합니다. 현재 서버컴퓨터가 개인컴퓨터이므로, 코리안넷과 소비자24을 통한 조회의 경우 사용이 원활하지 않을 수 있습니다.", TextToSpeech.QUEUE_FLUSH, null);
             }
         });
         server1.setOnClickListener(new View.OnClickListener() {
@@ -82,7 +82,7 @@ public class SubActivity extends AppCompatActivity {
 
                 mUserDao.setUpdateUser(user2);
 
-                tts.speak("바코드 정보가 적지만 속도가 빠릅니다.", TextToSpeech.QUEUE_FLUSH, null);
+                tts.speak("코리안넷 바코드 정보가 적지만 속도가 빠릅니다.", TextToSpeech.QUEUE_FLUSH, null);
                 finish();
                 startActivity(intent);
             }
@@ -98,7 +98,7 @@ public class SubActivity extends AppCompatActivity {
 
                 mUserDao.setUpdateUser(user3);
 
-                tts.speak("바코드 정보가 많지만 속도가 느립니다.", TextToSpeech.QUEUE_FLUSH, null);
+                tts.speak("소비자24 바코드 정보가 많지만 속도가 느립니다.", TextToSpeech.QUEUE_FLUSH, null);
                 finish();
                 startActivity(intent);
             }
@@ -114,7 +114,7 @@ public class SubActivity extends AppCompatActivity {
 
                 mUserDao.setUpdateUser(user8);
 
-                tts.speak("API로 바코드 검색", TextToSpeech.QUEUE_FLUSH, null);
+                tts.speak("에이피아이 바코드 정보가 중간 정도이며 속도가 빠릅니다", TextToSpeech.QUEUE_FLUSH, null);
                 finish();
                 startActivity(intent);
             }
@@ -123,6 +123,7 @@ public class SubActivity extends AppCompatActivity {
         goback.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                tts.speak("바코드 인식 화면으로 이동합니다.", TextToSpeech.QUEUE_FLUSH, null);
                 Intent intent = new Intent(SubActivity.this, MainActivity.class);
 
                 User user4 = new User();
