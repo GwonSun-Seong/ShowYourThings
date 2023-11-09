@@ -87,9 +87,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     long tempTimeB;
 
     String linkurl, parsing;
+    String notetext;
     String server = "barcode";
     String tempbarcode;
     String firstPrice, secondPrice;
+    boolean once = true;                // 여기에요 여기
     TextToSpeech tts;
     float ttsspeed;
 
@@ -160,6 +162,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
 
+
+
+        /*notetext = "";
+        if(once){
+            Toast.makeText(MainActivity.this, "실행", Toast.LENGTH_SHORT).show();
+            NoteAsyncTask noteAsyncTask = new NoteAsyncTask();
+            noteAsyncTask.execute();
+
+        }*/
+
+
+
+
         //데이터 조회
         List<User> userList = mUserDao.getUserAll();
 //        for(int i=0; i<userList.size(); i++){
@@ -220,6 +235,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 }
             }
         });
+
+
+
+
     }
     private void startBarcodeRecognitionAnimation() {
         // 배경 이미지 변경
@@ -479,6 +498,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         }
 
+
     private class PriceAsyncTask extends AsyncTask<String, Void, Void> {
 
         @Override
@@ -531,6 +551,57 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             alertdg();
         }
     }
+
+    /*private class NoteAsyncTask extends AsyncTask<Void, Void, Void> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            try{
+                Document doc = Jsoup.connect("https://blog.naver.com/whrekrdl/223123565310").get();
+                Element links = doc.select("div.se-module.se-module-text").first();
+                //div.se-module.se-module-text / se-component-content / se-section.se-section-text.se-l-default / se-text-paragraph.se-text-paragraph-align-
+                for (Element link : links){
+                    notetext += link.text();
+                }
+                notetext = links != null ? links.text() : "";
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            return null;
+
+        }
+
+        @Override
+        protected void onPostExecute(Void unused) {
+            Toast.makeText(MainActivity.this, notetext, Toast.LENGTH_SHORT).show();
+            if(!notetext.equals("Empty")){
+                AlertDialog.Builder builder4 = new AlertDialog.Builder(MainActivity.this);
+                builder4.setCancelable(false);
+                builder4.setTitle("공지");
+                builder4.setMessage(notetext);
+
+                builder4.setPositiveButton("확인", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                        init();
+
+                    }
+                }).show();
+
+            }
+            else if (!notetext.equals("")){
+                Toast.makeText(MainActivity.this, notetext + "= dd", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }*/
 
     public void closeCamera(){
         if (cameraProviderFuture != null && cameraExecutor != null){
